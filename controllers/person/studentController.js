@@ -1,44 +1,27 @@
-import Student from '../models/persons/student.js';
+import Student from '../../models/person/student.js';
+import { createDocument, getDocumentById, getAllDocuments } from '../../helpers/controllerHelpers.js';
 
 // Crear un nuevo estudiante
-export const createStudent = async (req, res) => {
+export const createStudent = (req, res) => {
   const { username, email, password, career, classes } = req.body;
-  try {
-    const newStudent = new Student({ username, email, password, role: 'student', career, classes });
-    await newStudent.save();
-    res.status(201).json({ message: 'Estudiante creado con éxito', newStudent });
-  } catch (error) {
-    console.error('Error al crear estudiante:', error);
-    res.status(500).json({ error: 'Error al crear estudiante' });
-  }
+  const studentData = { username, email, password, role: 'student', career, classes };
+  createDocument(Student, studentData, res, 'Estudiante creado con éxito');
 };
 
-// Obtener estudiantes por carrera
+// Obtener un estudiante específico
+export const getStudent = async (req, res) => {
+  const { id } = req.params;
+  getDocumentById(Student, id, req, res, 'Estudiante no encontrado');
+};
+
+// Obtener todos los estudiantes de una clase
+export const getStudentsByClass = async (req, res) => {
+  const { classId } = req.params;
+  await getAllDocuments(Student, { query: { classes: classId } }, req, res, 'No se encontraron estudiantes para esta clase');
+};
+
+// Obtener todos los estudiantes de una carrera
 export const getStudentsByCareer = async (req, res) => {
   const { careerId } = req.params;
-  try {
-    const students = await Student.find({ career: careerId });
-    res.status(200).json(students);
-  } catch (error) {
-    console.error('Error al obtener estudiantes por carrera:', error);
-    res.status(500).json({ error: 'Error al obtener estudiantes por carrera' });
-  }
-};
-
-export const getStudentsByClass = async (req, res) => {
-  const { classId } = req.params; // Obtiene el ID de la clase de los parámetros de la ruta
-
-  try {
-    // Busca los estudiantes que están en la clase especificada
-    const students = await Student.find({ classes: classId });
-    
-    if (!students.length) {
-      return res.status(404).json({ message: 'No se encontraron estudiantes para esta clase' });
-    }
-    
-    res.status(200).json(students);
-  } catch (error) {
-    console.error('Error al obtener estudiantes por clase:', error);
-    res.status(500).json({ error: 'Error al obtener estudiantes por clase' });
-  }
+  await getAllDocuments(Student, { query: { career: careerId } }, req, res, 'No se encontraron estudiantes para esta carrera');
 };
