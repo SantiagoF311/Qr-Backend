@@ -13,7 +13,11 @@ export const authenticateUser = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(actualToken, process.env.JWT_SECRET);
-    req.user = decoded;
+    // Verificar que el usuario existe
+    req.user = await User.findById(decoded.id);
+    if (!req.user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
@@ -22,7 +26,6 @@ export const authenticateUser = async (req, res, next) => {
     return res.status(403).json({ error: 'Token inválido' });
   }
 };
-
 
 export const isAdmin = (req, res, next) => {
   const user = req.user;
