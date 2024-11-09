@@ -5,7 +5,7 @@ const professorSchema = new mongoose.Schema({
   careers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Career' }],
   classes: [{
     class: { type: mongoose.Schema.Types.ObjectId, ref: 'Class' },
-    semester: Number
+    semester: { type: Number }
   }]
 });
 

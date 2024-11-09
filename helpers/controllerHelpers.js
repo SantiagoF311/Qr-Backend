@@ -1,7 +1,5 @@
 import { sendResponse, handleError } from './responseHelpers.js';
-import { validateAndFilterIds } from './validateMongoHelpers/validateAndFilterIds.js';
 
-// Crear un documento
 export const createDocument = async (Model, data, res, successMessage) => {
   try {
     const document = new Model(data);
@@ -12,19 +10,10 @@ export const createDocument = async (Model, data, res, successMessage) => {
   }
 };
 
-// Obtener todos los documentos con filtro opcional
-export const getAllDocuments = async (Model, req, res, notFoundMessage, additionalFilter = {}) => {
-  const { semesterId, careerId } = req.query;
-
+// Obtener todos los documentos
+export const getAllDocuments = async (Model, req, res, notFoundMessage) => {
   try {
-    const { valid, filter, errors } = await validateAndFilterIds(semesterId, careerId);
-
-    if (!valid) {
-      return res.status(404).json({ error: errors.join(', ') });
-    }
-
-    // Combinar el filtro existente con el filtro adicional
-    const documents = await Model.find({ ...filter, ...additionalFilter });
+    const documents = await Model.find();
     if (!documents.length) {
       return res.status(404).json({ message: notFoundMessage || `No se encontraron ${Model.modelName}` });
     }
@@ -34,18 +23,10 @@ export const getAllDocuments = async (Model, req, res, notFoundMessage, addition
   }
 };
 
-// Obtener un documento por ID con filtro opcional
-export const getDocumentById = async (Model, id, req, res, notFoundMessage, additionalFilter = {}) => {
-  const { semesterId, careerId } = req.query;
-
+// Obtener un documento por ID
+export const getDocumentById = async (Model, id, req, res, notFoundMessage) => {
   try {
-    const { valid, filter, errors } = await validateAndFilterIds(semesterId, careerId);
-
-    if (!valid) {
-      return res.status(404).json({ error: errors.join(', ') });
-    }
-
-    const document = await Model.findOne({ _id: id, ...filter, ...additionalFilter });
+    const document = await Model.findById(id);
     if (!document) {
       return res.status(404).json({ message: notFoundMessage || `${Model.modelName} no encontrado` });
     }
@@ -55,10 +36,10 @@ export const getDocumentById = async (Model, id, req, res, notFoundMessage, addi
   }
 };
 
-// Eliminar todos los documentos con filtro opcional
-export const deleteAllDocuments = async (Model, res, successMessage, additionalFilter = {}) => {
+// Eliminar todos los documentos
+export const deleteAllDocuments = async (Model, res, successMessage) => {
   try {
-    const result = await Model.deleteMany(additionalFilter);
+    const result = await Model.deleteMany({});
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: `No se encontraron ${Model.modelName} para eliminar` });
     }

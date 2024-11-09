@@ -5,7 +5,7 @@ import {
   deleteDocumentById,
   updateDocumentById
 } from '../helpers/controllerHelpers.js';
-import Class from '../models/Class.js';
+import Class from '../models/class.js';
 
 export const classController = {
   create: (req, res) => createDocument(Class, req.body, res),

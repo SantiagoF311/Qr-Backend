@@ -10,11 +10,11 @@ import {
 const router = express.Router();
 
 // Rutas que requieren autenticación y permisos de admin
-router.post('/', authenticateUser, isAdmin, createProfessor);
+router.post('/', createProfessor);
 
 // Rutas que solo requieren autenticación
-router.get('/:id', authenticateUser, getProfessor); // Obtener profesor por ID
-router.get('/career/:careerId', authenticateUser, getProfessorsByCareer); // Obtener profesores por carrera
-router.get('/class/:classId', authenticateUser, getProfessorsByClass); // Obtener profesores por clase
+router.get('/:id', getProfessor); // Obtener profesor por ID
+router.get('/career/:careerId', getProfessorsByCareer); // Obtener profesores por carrera
+router.get('/class/:classId', getProfessorsByClass); // Obtener profesores por clase
 
 export default router;

@@ -2,6 +2,8 @@ import User from '../models/person/person.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import QRCode from 'qrcode'; 
+import Student from '../models/person/student.js';
+import Professor from '../models/person/professor.js';
 
 export const registerAdmin = async (req, res) => {
   const { username, email, password } = req.body;
@@ -42,24 +44,51 @@ export const registerAdmin = async (req, res) => {
 
 
 export const register = async (req, res) => {
-  const { username, email, password, role } = req.body;
+  const { username, email, password, role, careerId } = req.body; // Incluimos careerId como parámetro
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     let qrCode = null;
-    if (role === 'estudiante') {
+    let newUser;
+
+    if (role === 'student') {
+      // Verificamos si la carrera existe
+      const career = await Career.findById(careerId);
+      if (!career) {
+        return res.status(400).json({ error: 'La carrera proporcionada no existe' });
+      }
+
+      // Generar un código QR específico para los estudiantes
       const qrCodeData = `Username: ${username}, Email: ${email}`;
       qrCode = await QRCode.toDataURL(qrCodeData);
-    }
 
-    const newUser = new User({
-      username,
-      email,
-      password: hashedPassword,
-      role,
-      qrCode,
-    });
+      // Crear un nuevo estudiante con la carrera asociada
+      newUser = new Student({
+        username,
+        email,
+        password: hashedPassword,
+        role,
+        qrCode,
+        career: career._id, // Asignamos la carrera aquí
+      });
+    } else if (role === 'professor') {
+      // Crear un nuevo profesor
+      newUser = new Professor({
+        username,
+        email,
+        password: hashedPassword,
+        role,
+      });
+    } else {
+      // Crear un nuevo usuario genérico si no es un estudiante o profesor
+      newUser = new User({
+        username,
+        email,
+        password: hashedPassword,
+        role,
+      });
+    }
 
     await newUser.save();
 
@@ -71,6 +100,7 @@ export const register = async (req, res) => {
         email: newUser.email,
         role: newUser.role,
         qrCode: newUser.qrCode,
+        career: newUser.career, // Incluimos la carrera en la respuesta
       },
     });
   } catch (error) {

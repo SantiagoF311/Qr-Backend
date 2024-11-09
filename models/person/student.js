@@ -3,7 +3,7 @@ import Person from './person.js';
 
 const studentSchema = new mongoose.Schema({
   qrCode: { type: String },
-  career: { type: mongoose.Schema.Types.ObjectId, ref: 'Career' },
+  career: { type: mongoose.Schema.Types.ObjectId, ref: 'Career' },  
   classes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Class' }]
 });
 

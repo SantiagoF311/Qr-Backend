@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
 
 const classSchema = new mongoose.Schema({
-  nombre: { type: String, required: true },
-  descripcion: { type: String },
-  semestreIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'semester' }],
-  carreraIds: { type: mongoose.Schema.Types.ObjectId, ref: 'career', required: true } // Añadir esta línea
+  name: { type: String, required: true },
+  description: { type: String },
+  semesterIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Semester' }],
+  career: { type: mongoose.Schema.Types.ObjectId, ref: 'Career', required: true }
 }, { timestamps: true });
 
-const Class = mongoose.model('class', classSchema);
+const Class = mongoose.model('Class', classSchema);
 
 export default Class;

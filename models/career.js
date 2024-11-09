@@ -3,9 +3,9 @@ import mongoose from 'mongoose';
 const careerSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   description: { type: String },
-  clases: [{ type: mongoose.Schema.Types.ObjectId, ref: 'class' }],
+  classes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Class' }],
 }, { timestamps: true });
 
-const Career = mongoose.model('career', careerSchema);
+const Career = mongoose.model('Career', careerSchema);
 
 export default Career;

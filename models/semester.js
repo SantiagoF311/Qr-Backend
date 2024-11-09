@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
 
 const semesterSchema = new mongoose.Schema({
-  carrera: { type: mongoose.Schema.Types.ObjectId, ref: 'career', required: true },
-  numero: { type: Number, required: true },
-  clases: [{ type: mongoose.Schema.Types.ObjectId, ref: 'class' }], 
+  career: { type: mongoose.Schema.Types.ObjectId, ref: 'Career', required: true },
+  number: { type: Number, required: true },
+  classes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Class' }]
 }, { timestamps: true });
 
-const Semester = mongoose.model('semester', semesterSchema);
+const Semester = mongoose.model('Semester', semesterSchema);
 
 export default Semester;
