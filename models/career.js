@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const careerSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   description: { type: String },
-  classes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Class' }],
+  classes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Class' }] // Cambiado para incluir clases asociadas a la carrera
 }, { timestamps: true });
 
 const Career = mongoose.model('Career', careerSchema);
