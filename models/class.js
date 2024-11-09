@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const classSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
-  semesterIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Semester' }],
+  semesterIds: [{ type: Number, required: true, enum: [1, 2, 3, 4, 5, 6, 7, 8, 9] }], // Cambiado a números del 1 al 9
   career: { type: mongoose.Schema.Types.ObjectId, ref: 'Career', required: true }
 }, { timestamps: true });
 
