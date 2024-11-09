@@ -6,6 +6,7 @@ import {
   updateDocumentById
 } from '../helpers/controllerHelpers.js';
 import Career from '../models/career.js';
+import Class from '../models/class.js';
 
 export const careerController = {
   create: async (req, res) => {
@@ -14,12 +15,17 @@ export const careerController = {
       const newCareer = new Career(req.body);
       await newCareer.save();
   
-      // Actualizar las clases asociadas a la carrera
+      // Obtener las clases asociadas a la carrera desde el cuerpo de la solicitud
       const { classes } = req.body;  // Las clases que llegan desde el frontend
   
-      for (let classItem of classes) {
-        // Actualizar cada clase para que su campo "career" apunte a la nueva carrera
-        await Class.findByIdAndUpdate(classItem.classId, { $set: { career: newCareer._id } });
+      // Si hay clases, actualizamos cada una para asignarles la nueva carrera
+      if (classes && classes.length > 0) {
+        for (let classItem of classes) {
+          // Asumimos que cada classItem tiene classId y los semestres asociados
+          await Class.findByIdAndUpdate(classItem.classId, {
+            $set: { career: newCareer._id, semesters: classItem.semesters || [] } // Actualizamos también los semestres
+          });
+        }
       }
   
       // Responder con el éxito
@@ -28,8 +34,25 @@ export const careerController = {
       handleError(res, error, 'Error al crear la carrera');
     }
   },
+
   getAll: (req, res) => getAllDocuments(Career, req, res, 'No se encontraron carreras'),
-  getById: (req, res) => getDocumentById(Career, req.params.id, req, res, 'Carrera no encontrada'),
+
+  getById: async (req, res) => {
+    try {
+      const career = await Career.findById(req.params.id).populate({
+        path: 'classes',
+        select: 'name description semesters', // Incluye las clases y sus semestres
+      });
+      if (!career) {
+        return res.status(404).json({ message: 'Carrera no encontrada' });
+      }
+      return res.json(career);
+    } catch (error) {
+      handleError(res, error, 'Error al obtener la carrera');
+    }
+  },
+
   delete: (req, res) => deleteDocumentById(Career, req.params.id, res),
+
   update: (req, res) => updateDocumentById(Career, req.params.id, req.body, res)
 };
