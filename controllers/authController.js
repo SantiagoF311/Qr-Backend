@@ -44,64 +44,37 @@ export const registerAdmin = async (req, res) => {
 
 
 export const register = async (req, res) => {
-  const { username, email, password, role, careerId } = req.body; // Incluimos careerId como parámetro
-
+  const { username, email, password, role } = req.body;
+  
   try {
+    // Encriptar contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    let qrCode = null;
-    let newUser;
 
-    if (role === 'student') {
-      // Verificamos si la carrera existe
-      const career = await Career.findById(careerId);
-      if (!career) {
-        return res.status(400).json({ error: 'La carrera proporcionada no existe' });
-      }
+    // Generar código QR para el estudiante
+    const qrCodeData = `Username: ${username}, Email: ${email}`;
+    const qrCode = await QRCode.toDataURL(qrCodeData);
 
-      // Generar un código QR específico para los estudiantes
-      const qrCodeData = `Username: ${username}, Email: ${email}`;
-      qrCode = await QRCode.toDataURL(qrCodeData);
+    // Crear el estudiante sin la referencia a la carrera
+    const newStudent = new Student({
+      username,
+      email,
+      password: hashedPassword,
+      role,
+      qrCode  // Asignar el código QR generado
+    });
 
-      // Crear un nuevo estudiante con la carrera asociada
-      newUser = new Student({
-        username,
-        email,
-        password: hashedPassword,
-        role,
-        qrCode,
-        career: career._id, // Asignamos la carrera aquí
-      });
-    } else if (role === 'professor') {
-      // Crear un nuevo profesor
-      newUser = new Professor({
-        username,
-        email,
-        password: hashedPassword,
-        role,
-      });
-    } else {
-      // Crear un nuevo usuario genérico si no es un estudiante o profesor
-      newUser = new User({
-        username,
-        email,
-        password: hashedPassword,
-        role,
-      });
-    }
-
-    await newUser.save();
+    // Guardar en la base de datos
+    await newStudent.save();
 
     res.status(201).json({
       message: 'Usuario registrado con éxito',
       user: {
-        id: newUser._id,
-        username: newUser.username,
-        email: newUser.email,
-        role: newUser.role,
-        qrCode: newUser.qrCode,
-        career: newUser.career, // Incluimos la carrera en la respuesta
-      },
+        id: newStudent._id,
+        username: newStudent.username,
+        email: newStudent.email,
+        role: newStudent.role,
+        qrCode: newStudent.qrCode  // Asegúrate de que el qrCode esté en la respuesta
+      }
     });
   } catch (error) {
     if (error.code === 11000) {
@@ -112,6 +85,7 @@ export const register = async (req, res) => {
     res.status(500).json({ error: 'Error al registrar usuario' });
   }
 };
+
 
 
 export const login = async (req, res) => {

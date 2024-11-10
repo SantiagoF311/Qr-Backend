@@ -2,8 +2,6 @@ import Student from '../../models/person/student.js';
 import { createDocument, getDocumentById, getAllDocuments } from '../../helpers/controllerHelpers.js';
 import mongoose from 'mongoose';
 
-
-
 // Crear un nuevo estudiante
 export const createStudent = (req, res) => {
   const { username, email, password, career, classes } = req.body;
@@ -11,7 +9,7 @@ export const createStudent = (req, res) => {
   createDocument(Student, studentData, res, 'Estudiante creado con éxito');
 };
 
-// Obtener un estudiante específico
+
 export const getStudent = async (req, res) => {
   const { id } = req.params;
 
@@ -21,17 +19,15 @@ export const getStudent = async (req, res) => {
       return res.status(400).json({ error: 'ID no válido' });
     }
 
-    // Buscar el estudiante por ID e incluir la información de la carrera y las clases
-    const student = await Student.findById(id)
-      .populate('career')  // Poblamos la carrera del estudiante
-      .populate('classes'); // Poblamos las clases asociadas al estudiante
+    // Buscar el estudiante por ID sin usar populate
+    const student = await Student.findById(id);
 
     // Verificar si el estudiante existe
     if (!student) {
       return res.status(404).json({ message: 'Estudiante no encontrado' });
     }
 
-    // Responder con el estudiante encontrado, incluyendo carrera y clases
+    // Responder con el estudiante encontrado
     return res.status(200).json(student);
 
   } catch (error) {
@@ -40,6 +36,7 @@ export const getStudent = async (req, res) => {
     return res.status(500).json({ message: 'Error al obtener el estudiante', error: error.message });
   }
 };
+
 // Obtener todos los estudiantes de una clase
 export const getStudentsByClass = async (req, res) => {
   const { classId } = req.params;
