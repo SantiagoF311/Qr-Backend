@@ -41,8 +41,6 @@ export const registerAdmin = async (req, res) => {
   }
 };
 
-
-
 export const register = async (req, res) => {
   const { username, email, password, role } = req.body;
 
@@ -60,8 +58,8 @@ export const register = async (req, res) => {
 
     let newUser;
     if (role === 'student') {
-      // Generar el código QR para el estudiante
-      const qrCodeData = `Username: ${username}, Email: ${email}`;
+      // Generar el código QR con el ID, nombre de usuario y correo electrónico
+      const qrCodeData = `ID: ${username}-${email}-${newUser._id}`;  // Usamos ID, username y email
       const qrCode = await QRCode.toDataURL(qrCodeData);
 
       newUser = new Student({
