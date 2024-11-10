@@ -7,7 +7,7 @@ const personSchema = new mongoose.Schema({
   role: { 
     type: String, 
     enum: ['student', 'admin', 'professor'], 
-    default: 'student' 
+    default: 'student' // Por defecto, el rol será 'student'
   }
 }, { collection: 'people' });
 

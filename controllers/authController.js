@@ -45,48 +45,66 @@ export const registerAdmin = async (req, res) => {
 
 export const register = async (req, res) => {
   const { username, email, password, role } = req.body;
-  
+
+  if (!['student', 'admin', 'professor'].includes(role)) {
+    return res.status(400).json({ message: 'Rol no válido' });
+  }
+
   try {
-    // Encriptar contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Generar código QR para el estudiante
-    const qrCodeData = `Username: ${username}, Email: ${email}`;
-    const qrCode = await QRCode.toDataURL(qrCodeData);
-
-    // Crear el estudiante sin la referencia a la carrera
-    const newStudent = new Student({
-      username,
-      email,
-      password: hashedPassword,
-      role,
-      qrCode  // Asignar el código QR generado
-    });
-
-    // Guardar en la base de datos
-    await newStudent.save();
-
-    res.status(201).json({
-      message: 'Usuario registrado con éxito',
-      user: {
-        id: newStudent._id,
-        username: newStudent.username,
-        email: newStudent.email,
-        role: newStudent.role,
-        qrCode: newStudent.qrCode  // Asegúrate de que el qrCode esté en la respuesta
-      }
-    });
-  } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({ error: 'El correo o el nombre de usuario ya están en uso' });
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'El correo ya está registrado' });
     }
 
-    console.error('Error al registrar usuario:', error);
-    res.status(500).json({ error: 'Error al registrar usuario' });
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    let newUser;
+    if (role === 'student') {
+      // Generar el código QR para el estudiante
+      const qrCodeData = `Username: ${username}, Email: ${email}`;
+      const qrCode = await QRCode.toDataURL(qrCodeData);
+
+      newUser = new Student({
+        username,
+        email,
+        password: hashedPassword,
+        role,
+        qrCode, // Asigna el QR al estudiante
+      });
+    } else if (role === 'professor') {
+      newUser = new Professor({
+        username,
+        email,
+        password: hashedPassword,
+        role,
+      });
+    } else {
+      newUser = new User({
+        username,
+        email,
+        password: hashedPassword,
+        role,
+      });
+    }
+
+    await newUser.save();
+
+    // Respuesta con el QR si es un estudiante
+    return res.status(201).json({
+      message: 'Usuario registrado con éxito',
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        role: newUser.role,
+        qrCode: newUser.qrCode || null, // Incluye el QR si existe
+      },
+    });
+  } catch (error) {
+    console.error('Error en el registro:', error);
+    return res.status(500).json({ message: 'Error en el registro' });
   }
 };
-
-
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
@@ -107,6 +125,12 @@ export const login = async (req, res) => {
       expiresIn: '7d',
     });
 
+    // Verificar si el usuario es un estudiante y tiene un QR
+    let qrCode = null;
+    if (user.role === 'student' && user.qrCode) {
+      qrCode = user.qrCode;
+    }
+
     // Enviar los datos del usuario completo junto con el token
     res.status(200).json({
       message: 'Inicio de sesión exitoso',
@@ -116,10 +140,11 @@ export const login = async (req, res) => {
         username: user.username,
         email: user.email,
         role: user.role,
-        qrCode: user.qrCode, // Esto será null si el usuario no tiene un QR
+        qrCode, // Incluir el QR si es un estudiante
       },
     });
   } catch (error) {
+    console.error('Error al iniciar sesión:', error);
     res.status(500).json({ error: 'Error al iniciar sesión' });
   }
 };
