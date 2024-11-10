@@ -37,6 +37,35 @@ export const getStudent = async (req, res) => {
   }
 };
 
+export const updateAttendance = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Verificar si el ID es un ObjectId válido
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'ID no válido' });
+    }
+
+    // Buscar al estudiante por ID
+    const student = await Student.findById(id);
+
+    // Verificar si el estudiante existe
+    if (!student) {
+      return res.status(404).json({ message: 'Estudiante no encontrado' });
+    }
+
+    // Actualizar el campo de asistencia
+    student.attendance = true;  // Se marca como presente, o puedes hacer esto configurable
+
+    await student.save();  // Guardar los cambios
+
+    return res.status(200).json({ message: 'Asistencia actualizada correctamente', student });
+  } catch (error) {
+    console.error('Error al actualizar asistencia:', error);
+    return res.status(500).json({ message: 'Error al actualizar la asistencia', error: error.message });
+  }
+};
+
 // Obtener todos los estudiantes de una clase
 export const getStudentsByClass = async (req, res) => {
   const { classId } = req.params;
