@@ -6,6 +6,7 @@ import {
   getStudentsByCareer,
   getStudentsByClass,
   updateAttendance, 
+  getAllStudents
 } from '../../controllers/person/studentController.js';
 
 const router = express.Router();
@@ -14,6 +15,7 @@ const router = express.Router();
 router.post('/', createStudent);
 
 // Rutas que solo requieren autenticación
+router.get('/', getAllStudents);
 router.get('/:id', getStudent); // Obtener un estudiante específico
 router.get('/career/:careerId', getStudentsByCareer); // Obtener estudiantes por carrera
 router.get('/class/:classId', getStudentsByClass); // Obtener estudiantes por clase

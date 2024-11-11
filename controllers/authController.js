@@ -58,17 +58,24 @@ export const register = async (req, res) => {
 
     let newUser;
     if (role === 'student') {
-      // Generar el código QR con el ID, nombre de usuario y correo electrónico
-      const qrCodeData = `ID: ${username}-${email}-${newUser._id}`;  // Usamos ID, username y email
-      const qrCode = await QRCode.toDataURL(qrCodeData);
-
+      // Crea el estudiante sin el QR para obtener el _id
       newUser = new Student({
         username,
         email,
         password: hashedPassword,
         role,
-        qrCode, // Asigna el QR al estudiante
       });
+
+      // Guarda el estudiante en la base de datos
+      await newUser.save();
+
+      // Genera el código QR usando el ID, nombre de usuario y correo electrónico
+      const qrCodeData = `ID: ${newUser._id} - Usuario: ${username} - Correo: ${email}`;
+      const qrCode = await QRCode.toDataURL(qrCodeData);
+
+      // Actualiza el estudiante con el código QR generado
+      newUser.qrCode = qrCode;
+      await newUser.save();
     } else if (role === 'professor') {
       newUser = new Professor({
         username,
@@ -76,6 +83,7 @@ export const register = async (req, res) => {
         password: hashedPassword,
         role,
       });
+      await newUser.save();
     } else {
       newUser = new User({
         username,
@@ -83,9 +91,8 @@ export const register = async (req, res) => {
         password: hashedPassword,
         role,
       });
+      await newUser.save();
     }
-
-    await newUser.save();
 
     // Respuesta con el QR si es un estudiante
     return res.status(201).json({
@@ -103,6 +110,7 @@ export const register = async (req, res) => {
     return res.status(500).json({ message: 'Error en el registro' });
   }
 };
+
 
 export const login = async (req, res) => {
   const { email, password } = req.body;

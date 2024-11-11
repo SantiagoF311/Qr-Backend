@@ -9,6 +9,19 @@ export const createStudent = (req, res) => {
   createDocument(Student, studentData, res, 'Estudiante creado con éxito');
 };
 
+export const getAllStudents = async (req, res) => {
+  try {
+    const students = await Student.find({});
+    if (!students || students.length === 0) {
+      return res.status(404).json({ message: 'No se encontraron estudiantes' });
+    }
+    return res.status(200).json(students);
+  } catch (error) {
+    console.error('Error al obtener todos los estudiantes:', error);
+    return res.status(500).json({ message: 'Error al obtener los estudiantes', error: error.message });
+  }
+};
+
 
 export const getStudent = async (req, res) => {
   const { id } = req.params;
