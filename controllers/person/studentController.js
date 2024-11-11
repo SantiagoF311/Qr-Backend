@@ -51,7 +51,7 @@ export const getStudent = async (req, res) => {
 };
 
 export const updateAttendance = async (req, res) => {
-  const { id } = req.body;  // Obtener el ID del cuerpo de la solicitud
+  const { id } = req.params;  // Obtener el ID de los parámetros de la ruta
 
   try {
     // Verificar si el ID es un ObjectId válido
