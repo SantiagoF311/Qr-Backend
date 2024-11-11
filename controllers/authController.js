@@ -71,12 +71,18 @@ export const register = async (req, res) => {
 
       // Genera el código QR usando el ID, nombre de usuario y correo electrónico
       // Genera el código QR usando solo el ID
-      const qrCodeData = newUser._id.toString();
-      const qrCode = await QRCode.toDataURL(qrCodeData);
+      // Genera el código QR usando solo el ID
+    const qrCodeData = newUser._id.toString();
+        
+    // Hacer log del contenido del QR
+    console.log("Contenido del QR generado:", qrCodeData);
+        
+    const qrCode = await QRCode.toDataURL(qrCodeData);
+        
+    // Actualiza el estudiante con el código QR generado
+    newUser.qrCode = qrCode;
+    await newUser.save();
 
-      // Actualiza el estudiante con el código QR generado
-      newUser.qrCode = qrCode;
-      await newUser.save();
     } else if (role === 'professor') {
       newUser = new Professor({
         username,
