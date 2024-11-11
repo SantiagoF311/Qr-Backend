@@ -51,7 +51,7 @@ export const getStudent = async (req, res) => {
 };
 
 export const updateAttendance = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.body;  // Obtener el ID del cuerpo de la solicitud
 
   try {
     // Verificar si el ID es un ObjectId válido
@@ -78,6 +78,7 @@ export const updateAttendance = async (req, res) => {
     return res.status(500).json({ message: 'Error al actualizar la asistencia', error: error.message });
   }
 };
+
 
 // Obtener todos los estudiantes de una clase
 export const getStudentsByClass = async (req, res) => {
