@@ -42,7 +42,7 @@ export const registerAdmin = async (req, res) => {
 };
 
 export const register = async (req, res) => {
-  const { username, email, password, role } = req.body;
+  const { username, email, password, role, cardUID } = req.body; // Recibe el cardUID del frontend
 
   if (!['student', 'admin', 'professor'].includes(role)) {
     return res.status(400).json({ message: 'Rol no válido' });
@@ -54,34 +54,38 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: 'El correo ya está registrado' });
     }
 
+    // Verificar si el UID de la tarjeta ya está en uso
+    if (role === 'student') {
+      const existingUID = await Student.findOne({ cardUID });
+      if (existingUID) {
+        return res.status(400).json({ message: 'El UID de la tarjeta ya está asignado a otro estudiante' });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     let newUser;
     if (role === 'student') {
-      // Crea el estudiante sin el QR para obtener el _id
+      // Crea el estudiante con el UID proporcionado
       newUser = new Student({
         username,
         email,
         password: hashedPassword,
         role,
+        cardUID, 
       });
 
       // Guarda el estudiante en la base de datos
       await newUser.save();
 
-      // Genera el código QR usando el ID, nombre de usuario y correo electrónico
-      // Genera el código QR usando solo el ID
-      // Genera el código QR usando solo el ID
-    const qrCodeData = newUser._id.toString();
-        
-    // Hacer log del contenido del QR
-    console.log("Contenido del QR generado:", qrCodeData);
-        
-    const qrCode = await QRCode.toDataURL(qrCodeData);
-        
-    // Actualiza el estudiante con el código QR generado
-    newUser.qrCode = qrCode;
-    await newUser.save();
+      // Genera el código QR usando el ID del estudiante
+      const qrCodeData = newUser._id.toString();
+      console.log("Contenido del QR generado:", qrCodeData);
+      const qrCode = await QRCode.toDataURL(qrCodeData);
+
+      // Actualiza el estudiante con el código QR generado
+      newUser.qrCode = qrCode;
+      await newUser.save();
 
     } else if (role === 'professor') {
       newUser = new Professor({
@@ -117,6 +121,7 @@ export const register = async (req, res) => {
     return res.status(500).json({ message: 'Error en el registro' });
   }
 };
+
 
 
 export const login = async (req, res) => {

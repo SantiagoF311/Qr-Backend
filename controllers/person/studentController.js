@@ -96,8 +96,37 @@ export const resetAllAttendance = async (req, res) => {
   }
 };
 
+export const handleCardUID = async (req, res) => {
+  try {
+    const { cardUID } = req.body; // Recibe el UID de la tarjeta desde el cuerpo de la solicitud
 
+    if (!cardUID) {
+      return res.status(400).json({ message: 'UID de la tarjeta no proporcionado' });
+    }
 
+    // Verificar si el UID ya está en uso por un estudiante
+    const existingStudent = await Student.findOne({ cardUID });
+
+    if (existingStudent) {
+      // Si el UID está en uso, responde con la información del estudiante
+      return res.status(200).json({
+        message: 'UID de la tarjeta ya está en uso',
+        student: {
+          id: existingStudent._id,
+          username: existingStudent.username,
+          email: existingStudent.email,
+          career: existingStudent.career,
+        },
+      });
+    } else {
+      // Si el UID no está en uso, responde indicando que está disponible
+      return res.status(200).json({ message: 'UID de la tarjeta disponible' });
+    }
+  } catch (error) {
+    console.error('Error al manejar el UID de la tarjeta:', error);
+    return res.status(500).json({ message: 'Error al procesar el UID de la tarjeta' });
+  }
+};
 // Obtener todos los estudiantes de una clase
 export const getStudentsByClass = async (req, res) => {
   const { classId } = req.params;
