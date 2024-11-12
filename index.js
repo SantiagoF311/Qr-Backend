@@ -89,6 +89,21 @@ app.get('/', (req, res) => {
   res.status(200).send('<h1>Inicio</h1>');
 });
 
+// Inicia la conexión de socket.io
+io.on('connection', (socket) => {
+  console.log('Cliente conectado');
+  
+  // Aquí puedes manejar eventos del cliente, por ejemplo:
+  socket.on('startReadingCard', () => {
+    console.log('Cliente solicitó comenzar la lectura de tarjeta');
+    // Puedes emitir un evento para iniciar la lectura de la tarjeta, si es necesario
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Cliente desconectado');
+  });
+});
+
 // Iniciar el servidor con manejo de errores
 try {
   connectToDatabase().then(() => {
@@ -99,4 +114,3 @@ try {
 } catch (error) {
   console.error('Error al iniciar el servidor:', error.message);
 }
-
