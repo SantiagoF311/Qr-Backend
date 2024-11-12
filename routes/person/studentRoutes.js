@@ -6,7 +6,8 @@ import {
   getStudentsByCareer,
   getStudentsByClass,
   updateAttendance, 
-  getAllStudents
+  getAllStudents,
+  resetAllAttendance
 } from '../../controllers/person/studentController.js';
 
 const router = express.Router();
@@ -22,5 +23,6 @@ router.get('/class/:classId', getStudentsByClass); // Obtener estudiantes por cl
 
 // Ruta para actualizar la asistencia
 router.patch('/:id/attendance', updateAttendance);  // Aquí añadimos la ruta para actualizar la asistencia
+router.patch('/students/resetAttendance', resetAllAttendance);
 
 export default router;

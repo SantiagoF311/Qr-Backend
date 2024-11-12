@@ -79,6 +79,24 @@ export const updateAttendance = async (req, res) => {
   }
 };
 
+export const resetAllAttendance = async (req, res) => {
+  try {
+    // Actualizar la asistencia de todos los estudiantes a "false"
+    const result = await Student.updateMany({}, { attendance: false });
+
+    // Verificar si se realizó alguna actualización
+    if (result.nModified === 0) {
+      return res.status(200).json({ message: 'No se modificó la asistencia de ningún estudiante' });
+    }
+
+    return res.status(200).json({ message: 'Asistencia de todos los estudiantes reseteada correctamente', result });
+  } catch (error) {
+    console.error('Error al resetear la asistencia de todos los estudiantes:', error);
+    return res.status(500).json({ message: 'Error al resetear la asistencia', error: error.message });
+  }
+};
+
+
 
 // Obtener todos los estudiantes de una clase
 export const getStudentsByClass = async (req, res) => {
