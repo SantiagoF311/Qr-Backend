@@ -10,10 +10,15 @@ import classRoutes from './routes/classRoutes.js';
 import semesterRoutes from './routes/semesterRoutes.js';
 import { SerialPort } from 'serialport';
 import axios from 'axios'; // Asegúrate de importar axios
+import http from 'http'; // Importar http para crear un servidor HTTP
+import { Server } from 'socket.io'; // Cambiado para usar Server de socket.io
 
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app); // Usamos un servidor HTTP
+const io = new Server(server); // Inicializamos Socket.io con el servidor
+
 const PORT = process.env.PORT || 3000;
 
 const port = new SerialPort({
@@ -45,11 +50,15 @@ port.on('data', async (data) => {  // Marcar como 'async'
 
       try {
         // Enviar el UID al controlador a través de una solicitud HTTP interna
-        const response = await axios.post('http://localhost:3000/api/students/card/uid', {
+        const response = await axios.post('https://qr-backend-oxm9.onrender.com/api/students/card/uid', {
           cardUID: extractedUID,
         });
 
         console.log('Respuesta del controlador:', response.data);
+
+        // Enviar el UID recibido al cliente a través de WebSocket
+        io.emit('uidReceived', response.data); // Aquí estamos enviando el UID al cliente conectado
+
       } catch (error) {
         console.error('Error al enviar el UID al controlador:', error.response ? error.response.data : error.message);
       }
@@ -83,10 +92,11 @@ app.get('/', (req, res) => {
 // Iniciar el servidor con manejo de errores
 try {
   connectToDatabase().then(() => {
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Servidor corriendo en el puerto ${PORT}`);
     });
   });
 } catch (error) {
   console.error('Error al iniciar el servidor:', error.message);
 }
+
