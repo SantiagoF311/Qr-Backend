@@ -108,7 +108,7 @@ export const handleCardUID = async (req, res) => {
     const existingStudent = await Student.findOne({ cardUID });
 
     if (existingStudent) {
-      // Si el UID está en uso, responde con la información del estudiante
+      // Si el UID está en uso, responde solo con los datos del estudiante
       return res.status(200).json({
         message: 'UID de la tarjeta ya está en uso',
         student: {
@@ -119,14 +119,18 @@ export const handleCardUID = async (req, res) => {
         },
       });
     } else {
-      // Si el UID no está en uso, responde indicando que está disponible
-      return res.status(200).json({ message: 'UID de la tarjeta disponible' });
+      // Si el UID no está en uso, solo responde con el cardUID
+      return res.status(200).json({
+        cardUID: cardUID,  // Se pasa el UID al frontend sin ningún mensaje adicional
+      });
     }
   } catch (error) {
     console.error('Error al manejar el UID de la tarjeta:', error);
     return res.status(500).json({ message: 'Error al procesar el UID de la tarjeta' });
   }
 };
+
+
 // Obtener todos los estudiantes de una clase
 export const getStudentsByClass = async (req, res) => {
   const { classId } = req.params;

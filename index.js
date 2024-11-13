@@ -33,41 +33,34 @@ port.on('open', () => {
 });
 
 // Cambiar el manejador de 'data' a una función 'async'
-port.on('data', async (data) => {  // Marcar como 'async'
-  // Concatenar los datos recibidos en una sola línea
+port.on('data', async (data) => {  
   accumulatedData += data.toString('utf-8');  
   console.log('Datos acumulados:', accumulatedData);
 
-  // Si los datos están completos y el formato esperado es un UID, procesarlos
   if (accumulatedData.includes('\n')) {
-    const uid = accumulatedData.trim();  // Asegúrate de que los datos estén limpios
-
+    const uid = accumulatedData.trim();  
     console.log('UID recibido:', uid);
 
-    // Verificar si el UID tiene el formato esperado
-    if (uid.startsWith('UID de la tarjeta:')) {
-      const extractedUID = uid.split(':')[1].trim();
+    const extractedUID = uid;  
 
-      try {
-        // Enviar el UID al controlador a través de una solicitud HTTP interna
-        const response = await axios.post('https://qr-backend-oxm9.onrender.com/api/students/card/uid', {
-          cardUID: extractedUID,
-        });
+    try {
+      const response = await axios.post('https://qr-backend-oxm9.onrender.com/api/students/card/uid', {
+        cardUID: extractedUID,
+      });
 
-        console.log('Respuesta del controlador:', response.data);
+      console.log('Respuesta del controlador:', response.data); 
 
-        // Enviar el UID recibido al cliente a través de WebSocket
-        io.emit('uidReceived', response.data); // Aquí estamos enviando el UID al cliente conectado
+      // Emitir el UID o los datos del estudiante según la respuesta
+      io.emit('uidReceived', response.data);  
 
-      } catch (error) {
-        console.error('Error al enviar el UID al controlador:', error.response ? error.response.data : error.message);
-      }
+    } catch (error) {
+      console.error('Error al enviar el UID al controlador:', error.response ? error.response.data : error.message);
     }
 
-    // Limpiar los datos acumulados después de procesarlos
     accumulatedData = ''; 
   }
 });
+
 
 port.on('error', (err) => {
   console.log('Error: ', err);
