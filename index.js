@@ -94,17 +94,23 @@ app.get('/', (req, res) => {
 // Inicia la conexión de socket.io
 io.on('connection', (socket) => {
   console.log('Cliente conectado');
-  
-  // Aquí puedes manejar eventos del cliente, por ejemplo:
+
+  // Escuchar el evento 'startReadingCard'
   socket.on('startReadingCard', () => {
-    console.log('Cliente solicitó comenzar la lectura de tarjeta');
-    // Puedes emitir un evento para iniciar la lectura de la tarjeta, si es necesario
+    console.log('Evento startReadingCard recibido');
+
+    const mockUID = '1B 8D 3C 02';  // Este es un UID de ejemplo
+
+    socket.emit('uidReceived', { cardUID: mockUID });
+
+    console.log('UID enviado al cliente:', mockUID);
   });
 
   socket.on('disconnect', () => {
     console.log('Cliente desconectado');
   });
 });
+
 
 // Iniciar el servidor con manejo de errores
 try {
