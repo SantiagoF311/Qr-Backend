@@ -24,6 +24,6 @@ router.get('/class/:classId', getStudentsByClass); // Obtener estudiantes por cl
 // Ruta para actualizar la asistencia
 router.patch('/:id/attendance', updateAttendance);  // Aquí añadimos la ruta para actualizar la asistencia
 router.patch('/resetAttendance', resetAllAttendance);
-router.post('/card/uid', handleCardUID); 
+router.post('/uid', handleCardUID); 
 
 export default router;

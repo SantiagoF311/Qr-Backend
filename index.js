@@ -60,7 +60,7 @@ port.on('data', async (data) => {
 
     try {
       // Realizar la llamada al controlador para obtener los datos del estudiante
-      const response = await axios.post('https://qr-backend-oxm9.onrender.com/api/students/card/uid', {
+      const response = await axios.post('http://qr-backend-oxm9.onrender.com/api/students/uid', {
         cardUID: extractedUID,
       });
 
