@@ -12,18 +12,36 @@ import { SerialPort } from 'serialport';
 import axios from 'axios';
 import http from 'http';
 import { Server } from 'socket.io';
+import cors from 'cors'; // Importar cors
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+
+// Configuración de CORS para Express
+app.use(cors({
+  origin: 'http://qr-backend-oxm9.onrender.com',  // Permite cualquier origen (ajustar según necesidad de seguridad)
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization'],  // Añadir headers que necesites
+  credentials: true,  // Permite el uso de credenciales como cookies
+}));
+
+// Configuración de Socket.IO con CORS
+const io = new Server(server, {
+  cors: {
+    origin: 'https://qr-backend-oxm9.onrender.com',  // Especifica el origen correcto del cliente
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  },
+});
 
 const PORT = process.env.PORT || 3000;
 
 // Configuración del puerto serial (ajusta el path si es necesario)
 const port = new SerialPort({
-  path: 'COM3',  // Asegúrate de que este sea el puerto correcto
+  path: 'COM3',  
   baudRate: 9600,
 });
 
@@ -48,7 +66,7 @@ port.on('data', async (data) => {
 
     // Si el UID no es válido, limpiamos los datos y no procesamos nada
     if (!uidPattern.test(uid)) {
-      console.log('Esperando datos válidos...');  // Este log puede ser opcional
+      console.log('Esperando datos válidos...');
       accumulatedData = '';  // Limpiar los datos acumulados y esperar una nueva lectura
       return;  // No hacer nada más hasta que tengamos un UID válido
     }
@@ -77,8 +95,6 @@ port.on('data', async (data) => {
     accumulatedData = ''; 
   }
 });
-
-
 
 port.on('error', (err) => {
   console.log('Error: ', err);
@@ -131,8 +147,6 @@ io.on('connection', (socket) => {
     console.log('Cliente desconectado');
   });
 });
-
-
 
 // Iniciar el servidor
 try {
