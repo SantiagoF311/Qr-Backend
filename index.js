@@ -37,27 +37,36 @@ port.on('data', async (data) => {
   accumulatedData += data.toString('utf-8');  
   console.log('Datos acumulados:', accumulatedData);
 
+  // Verificar si los datos contienen un salto de línea
   if (accumulatedData.includes('\n')) {
-    const uid = accumulatedData.trim();  
+    const uid = accumulatedData.trim();  // Eliminar espacios y saltos de línea
+    
     console.log('UID recibido:', uid);
 
-    const extractedUID = uid;  
+    // Si el UID tiene el formato esperado (puedes modificar el patrón si es necesario)
+    const uidPattern = /^[A-F0-9\s]+$/; // Asegurarse de que el UID sea un formato hexadecimal
+    if (uidPattern.test(uid)) {
+      const extractedUID = uid;
 
-    try {
-      const response = await axios.post('https://qr-backend-oxm9.onrender.com/api/students/card/uid', {
-        cardUID: extractedUID,
-      });
+      try {
+        const response = await axios.post('http://localhost:3000/api/students/card/uid', {
+          cardUID: extractedUID,
+        });
 
-      console.log('Respuesta del controlador:', response.data); 
+        console.log('Respuesta del controlador:', response.data); 
 
-      // Emitir el UID o los datos del estudiante según la respuesta
-      io.emit('uidReceived', response.data);  
+        // Emitir el UID o los datos del estudiante según la respuesta
+        io.emit('uidReceived', response.data);  
 
-    } catch (error) {
-      console.error('Error al enviar el UID al controlador:', error.response ? error.response.data : error.message);
+      } catch (error) {
+        console.error('Error al enviar el UID al controlador:', error.response ? error.response.data : error.message);
+      }
+
+      accumulatedData = ''; // Limpiar los datos acumulados después de procesarlos
+    } else {
+      console.error('UID no válido recibido:', uid);
+      accumulatedData = ''; // Limpiar los datos acumulados si no es un UID válido
     }
-
-    accumulatedData = ''; 
   }
 });
 
