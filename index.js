@@ -106,18 +106,22 @@ io.on('connection', (socket) => {
 
   socket.on('startReadingCard', () => {
     console.log('Evento startReadingCard recibido');
-    
-    // Aquí es donde ahora debemos esperar el UID real desde el puerto serial
+
+    // Esperamos a que accumulatedData contenga un UID válido
     if (accumulatedData.trim()) {
-      // Si ya tenemos un UID válido en accumulatedData
-      const uid = accumulatedData.trim();
+      const uid = accumulatedData.trim(); // Obtenemos el UID limpio
       console.log('UID recibido:', uid);
 
-      // Emitimos el UID al cliente
-      socket.emit('uidReceived', { cardUID: uid });
-
-      // Limpiar los datos acumulados después de emitirlos
-      accumulatedData = '';
+      // Solo procesamos si el UID es válido
+      const uidPattern = /^[A-F0-9\s]+$/;
+      if (uidPattern.test(uid)) {
+        // Emitimos el UID al cliente
+        socket.emit('uidReceived', { cardUID: uid });
+        console.log('UID enviado al cliente:', uid);
+        accumulatedData = ''; // Limpiar datos acumulados después de enviarlo
+      } else {
+        console.log('Esperando datos válidos...');
+      }
     } else {
       console.log('Esperando datos válidos...');
     }
@@ -127,6 +131,7 @@ io.on('connection', (socket) => {
     console.log('Cliente desconectado');
   });
 });
+
 
 
 // Iniciar el servidor
