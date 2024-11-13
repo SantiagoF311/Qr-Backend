@@ -21,39 +21,55 @@ const server = http.createServer(app);
 
 // Configuración de CORS para Express
 app.use(cors({
-  origin: 'http://qr-backend-oxm9.onrender.com',  // Permite cualquier origen (ajustar según necesidad de seguridad)
+  origin: ['http://localhost:3000', 'https://qr-backend-oxm9.onrender.com'], // Agrega todas las URLs necesarias
   methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization'],  // Añadir headers que necesites
-  credentials: true,  // Permite el uso de credenciales como cookies
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 }));
+
+// Logs de CORS
+app.use((req, res, next) => {
+  console.log('CORS Middleware: Solicitud recibida');
+  console.log('Origen de la solicitud:', req.headers.origin);
+  next();
+});
 
 // Configuración de Socket.IO con CORS
 const io = new Server(server, {
   cors: {
-    origin: 'https://qr-backend-oxm9.onrender.com',  // Especifica el origen correcto del cliente
+    origin: ['http://localhost:3000', 'https://qr-backend-oxm9.onrender.com'],
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   },
 });
 
+// Logs de conexión y desconexión de Socket.IO
+io.on('connection', (socket) => {
+  console.log('Cliente conectado:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('Cliente desconectado:', socket.id);
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 
 // Configuración del puerto serial (ajusta el path si es necesario)
 const port = new SerialPort({
-  path: 'COM3',  
+  path: 'COM3',
   baudRate: 9600,
 });
 
-let accumulatedData = ''; 
+let accumulatedData = '';
 
 port.on('open', () => {
   console.log('Puerto abierto');
 });
 
-// El manejador de 'data' ahora maneja los datos reales leídos del lector RFID
-port.on('data', async (data) => {  
-  accumulatedData += data.toString('utf-8');  // Acumula los datos leídos
+// Manejador de 'data' que maneja los datos reales leídos del lector RFID
+port.on('data', async (data) => {
+  accumulatedData += data.toString('utf-8'); // Acumula los datos leídos
   console.log('Datos acumulados:', accumulatedData);
 
   // Verificar si los datos contienen un salto de línea (indicación de fin de lectura)
@@ -61,23 +77,22 @@ port.on('data', async (data) => {
     // Limpiar espacios y saltos de línea extra
     let uid = accumulatedData.trim();
 
-    // Solo procesamos si el UID tiene el formato correcto (eliminamos cualquier texto previo no deseado)
+    // Validar el formato del UID
     const uidPattern = /^[A-F0-9\s]+$/;
 
-    // Si el UID no es válido, limpiamos los datos y no procesamos nada
     if (!uidPattern.test(uid)) {
       console.log('Esperando datos válidos...');
-      accumulatedData = '';  // Limpiar los datos acumulados y esperar una nueva lectura
-      return;  // No hacer nada más hasta que tengamos un UID válido
+      accumulatedData = ''; // Limpiar los datos acumulados y esperar una nueva lectura
+      return; // No hacer nada más hasta que tengamos un UID válido
     }
 
     console.log('UID recibido:', uid);
 
-    // Si es un UID válido, procesarlo
+    // Procesar el UID si es válido
     const extractedUID = uid;
 
     try {
-      // Realizar la llamada al controlador para obtener los datos del estudiante
+      // Realizar la llamada al servidor para obtener los datos del estudiante
       const response = await axios.post('http://qr-backend-oxm9.onrender.com/api/students/uid', {
         cardUID: extractedUID,
       });
@@ -85,19 +100,18 @@ port.on('data', async (data) => {
       console.log('Respuesta del controlador:', response.data);
 
       // Emitir el UID o los datos del estudiante al cliente
-      io.emit('uidReceived', response.data);  // Emitir los datos al cliente
-
+      io.emit('uidReceived', response.data); // Emitir los datos al cliente
     } catch (error) {
       console.error('Error al enviar el UID al controlador:', error.response ? error.response.data : error.message);
     }
 
     // Limpiar los datos acumulados después de procesarlos
-    accumulatedData = ''; 
+    accumulatedData = '';
   }
 });
 
 port.on('error', (err) => {
-  console.log('Error: ', err);
+  console.log('Error en el puerto:', err);
 });
 
 app.use(express.json());
