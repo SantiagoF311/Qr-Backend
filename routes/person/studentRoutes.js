@@ -8,7 +8,8 @@ import {
   updateAttendance, 
   getAllStudents,
   resetAllAttendance,
-  handleCardUID
+  handleCardUID,
+  markAttendanceByUID
 } from '../../controllers/person/studentController.js';
 
 const router = express.Router();
@@ -23,6 +24,7 @@ router.get('/career/:careerId', getStudentsByCareer); // Obtener estudiantes por
 router.get('/class/:classId', getStudentsByClass); // Obtener estudiantes por clase
 // Ruta para actualizar la asistencia
 router.patch('/:id/attendance', updateAttendance);  // Aquí añadimos la ruta para actualizar la asistencia
+router.post('/attendance/uid', markAttendanceByUID);
 router.patch('/resetAttendance', resetAllAttendance);
 router.post('/uid', handleCardUID); 
 

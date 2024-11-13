@@ -19,38 +19,21 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// Configuración de CORS para Express
+// Para CORS
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://qr-backend-oxm9.onrender.com'], // Agrega todas las URLs necesarias
+  origin: ['http://localhost:3000', 'http://192.168.0.240:3000'], // Agregar tu IP local
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }));
 
-// Logs de CORS
-app.use((req, res, next) => {
-  console.log('CORS Middleware: Solicitud recibida');
-  console.log('Origen de la solicitud:', req.headers.origin);
-  next();
-});
-
-// Configuración de Socket.IO con CORS
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:3000', 'https://qr-backend-oxm9.onrender.com'],
+    origin: ['http://localhost:3000', 'http://192.168.0.240:3000'], // Agregar tu IP local
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   },
-});
-
-// Logs de conexión y desconexión de Socket.IO
-io.on('connection', (socket) => {
-  console.log('Cliente conectado:', socket.id);
-
-  socket.on('disconnect', () => {
-    console.log('Cliente desconectado:', socket.id);
-  });
 });
 
 const PORT = process.env.PORT || 3000;
@@ -61,51 +44,54 @@ const port = new SerialPort({
   baudRate: 9600,
 });
 
-let accumulatedData = '';
+let accumulatedData = '';  // Almacenar los datos acumulados
 
 port.on('open', () => {
   console.log('Puerto abierto');
 });
 
-// Manejador de 'data' que maneja los datos reales leídos del lector RFID
 port.on('data', async (data) => {
   accumulatedData += data.toString('utf-8'); // Acumula los datos leídos
-  console.log('Datos acumulados:', accumulatedData);
 
-  // Verificar si los datos contienen un salto de línea (indicación de fin de lectura)
+  // Asegurarse de procesar solo cuando haya un salto de línea en los datos
   if (accumulatedData.includes('\n')) {
-    // Limpiar espacios y saltos de línea extra
-    let uid = accumulatedData.trim();
+    let uid = accumulatedData.trim(); // Eliminar espacios y saltos de línea extra
 
-    // Validar el formato del UID
+    console.log('Datos acumulados antes de procesar:', uid);
+
+    // Eliminar el prefijo "Card UID: " si está presente
+    const cleanedUID = uid.replace(/^Card UID: /, '').trim();
+
+    console.log('UID limpio después de eliminar prefijo:', cleanedUID);
+
     const uidPattern = /^[A-F0-9\s]+$/;
 
-    if (!uidPattern.test(uid)) {
-      console.log('Esperando datos válidos...');
+    if (!uidPattern.test(cleanedUID)) {
+      console.log('Esperando datos válidos...'); // Log para ver qué está llegando
       accumulatedData = ''; // Limpiar los datos acumulados y esperar una nueva lectura
-      return; // No hacer nada más hasta que tengamos un UID válido
+      return;
     }
 
-    console.log('UID recibido:', uid);
+    console.log('Datos recibidos:', cleanedUID);
 
-    // Procesar el UID si es válido
-    const extractedUID = uid;
+    // Eliminar cualquier otro texto extra como espacios adicionales
+    const extractedUID = cleanedUID.replace(/[^A-F0-9]/g, '').toUpperCase();
 
+    console.log('UID extraído después de limpiar:', extractedUID);
+    
     try {
-      // Realizar la llamada al servidor para obtener los datos del estudiante
-      const response = await axios.post('http://qr-backend-oxm9.onrender.com/api/students/uid', {
+      const response = await axios.post('http://localhost:3000/api/students/uid', {
         cardUID: extractedUID,
       });
 
       console.log('Respuesta del controlador:', response.data);
-
-      // Emitir el UID o los datos del estudiante al cliente
+      
+      // Emitir los datos al cliente
       io.emit('uidReceived', response.data); // Emitir los datos al cliente
     } catch (error) {
       console.error('Error al enviar el UID al controlador:', error.response ? error.response.data : error.message);
     }
 
-    // Limpiar los datos acumulados después de procesarlos
     accumulatedData = '';
   }
 });
@@ -139,16 +125,19 @@ io.on('connection', (socket) => {
 
     // Esperamos a que accumulatedData contenga un UID válido
     if (accumulatedData.trim()) {
-      const uid = accumulatedData.trim(); // Obtenemos el UID limpio
+      let uid = accumulatedData.trim(); // Obtenemos el UID limpio
       console.log('UID recibido:', uid);
 
-      // Solo procesamos si el UID es válido
+      // Limpiar el prefijo y validar el UID
+      const cleanedUID = uid.replace(/^Card UID: /, '').trim();
       const uidPattern = /^[A-F0-9\s]+$/;
-      if (uidPattern.test(uid)) {
-        // Emitimos el UID al cliente
-        socket.emit('uidReceived', { cardUID: uid });
-        console.log('UID enviado al cliente:', uid);
-        accumulatedData = ''; // Limpiar datos acumulados después de enviarlo
+
+      if (uidPattern.test(cleanedUID)) {
+        // Eliminar caracteres no válidos
+        const extractedUID = cleanedUID.replace(/[^A-F0-9]/g, '').toUpperCase();
+        console.log('UID limpio enviado al cliente:', extractedUID);
+        socket.emit('uidReceived', { cardUID: extractedUID });
+        accumulatedData = ''; 
       } else {
         console.log('Esperando datos válidos...');
       }

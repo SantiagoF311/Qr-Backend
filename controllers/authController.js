@@ -42,27 +42,34 @@ export const registerAdmin = async (req, res) => {
 };
 
 export const register = async (req, res) => {
-  const { username, email, password, role, cardUID } = req.body; // Recibe el cardUID del frontend
+  const { username, email, password, role, uid } = req.body; // Recibe el uid
+
+  console.log("Datos recibidos en el registro:", req.body); // Verificar datos recibidos en el backend
 
   if (!['student', 'admin', 'professor'].includes(role)) {
+    console.log("Error: Rol no válido", role);
     return res.status(400).json({ message: 'Rol no válido' });
   }
 
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log("Error: El correo ya está registrado", email);
       return res.status(400).json({ message: 'El correo ya está registrado' });
     }
 
     // Verificar si el UID de la tarjeta ya está en uso
     if (role === 'student') {
-      const existingUID = await Student.findOne({ cardUID });
+      console.log("Verificando si el UID ya está en uso:", uid);
+      const existingUID = await Student.findOne({ uid: uid });  // Aquí cambiamos cardUID a uid
       if (existingUID) {
+        console.log("Error: El UID ya está asignado a otro estudiante:", uid);
         return res.status(400).json({ message: 'El UID de la tarjeta ya está asignado a otro estudiante' });
       }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("Contraseña hasheada:", hashedPassword);
 
     let newUser;
     if (role === 'student') {
@@ -72,7 +79,7 @@ export const register = async (req, res) => {
         email,
         password: hashedPassword,
         role,
-        cardUID, 
+        uid: uid,  
       });
 
       // Guarda el estudiante en la base de datos
@@ -80,7 +87,6 @@ export const register = async (req, res) => {
 
       // Genera el código QR usando el ID del estudiante
       const qrCodeData = newUser._id.toString();
-      console.log("Contenido del QR generado:", qrCodeData);
       const qrCode = await QRCode.toDataURL(qrCodeData);
 
       // Actualiza el estudiante con el código QR generado
@@ -110,18 +116,19 @@ export const register = async (req, res) => {
       message: 'Usuario registrado con éxito',
       user: {
         id: newUser._id,
+        uid: newUser.uid,  
         username: newUser.username,
         email: newUser.email,
         role: newUser.role,
-        qrCode: newUser.qrCode || null, // Incluye el QR si existe
+        qrCode: newUser.qrCode || null,  
       },
     });
+    
   } catch (error) {
-    console.error('Error en el registro:', error);
-    return res.status(500).json({ message: 'Error en el registro' });
+    console.error('Error en el registro:', error); // Mostrar error detallado
+    return res.status(500).json({ message: `Error en el registro: ${error.message}` });
   }
 };
-
 
 
 export const login = async (req, res) => {
@@ -155,10 +162,11 @@ export const login = async (req, res) => {
       token,
       user: {
         id: user._id,
+        uid: user.uid,  
         username: user.username,
         email: user.email,
         role: user.role,
-        qrCode, // Incluir el QR si es un estudiante
+        qrCode, 
       },
     });
   } catch (error) {

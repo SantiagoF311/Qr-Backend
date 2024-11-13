@@ -79,6 +79,29 @@ export const updateAttendance = async (req, res) => {
   }
 };
 
+export const markAttendanceByUID = async (req, res) => {
+  try {
+    const { cardUID } = req.body;
+
+    // Buscar al estudiante por su UID
+    const student = await Student.findOne({ uid: cardUID });
+
+    if (!student) {
+      return res.status(404).json({ error: 'Estudiante no encontrado' }); // Error si no se encuentra el estudiante
+    }
+
+    // Marcar la asistencia
+    student.attendance = true;
+    await student.save();
+
+    return res.status(200).json({ message: 'Asistencia marcada correctamente', student });
+  } catch (error) {
+    console.error('Error al marcar la asistencia:', error);
+    return res.status(500).json({ error: 'Error al marcar la asistencia' });
+  }
+};
+
+
 export const resetAllAttendance = async (req, res) => {
   try {
     // Actualizar la asistencia de todos los estudiantes a "false"
