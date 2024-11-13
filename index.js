@@ -49,7 +49,7 @@ port.on('data', async (data) => {
       const extractedUID = uid;
 
       try {
-        const response = await axios.post('http://localhost:3000/api/students/card/uid', {
+        const response = await axios.post('https://qr-backend-oxm9.onrender.com/api/students/card/uid', {
           cardUID: extractedUID,
         });
 
