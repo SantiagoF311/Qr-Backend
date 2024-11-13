@@ -9,20 +9,21 @@ import careerRoutes from './routes/careerRoutes.js';
 import classRoutes from './routes/classRoutes.js';
 import semesterRoutes from './routes/semesterRoutes.js';
 import { SerialPort } from 'serialport';
-import axios from 'axios'; // Asegúrate de importar axios
-import http from 'http'; // Importar http para crear un servidor HTTP
-import { Server } from 'socket.io'; // Cambiado para usar Server de socket.io
+import axios from 'axios';
+import http from 'http';
+import { Server } from 'socket.io';
 
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app); // Usamos un servidor HTTP
-const io = new Server(server); // Inicializamos Socket.io con el servidor
+const server = http.createServer(app);
+const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
+// Configuración del puerto serial (ajusta el path si es necesario)
 const port = new SerialPort({
-  path: 'COM3',  
+  path: 'COM3',  // Asegúrate de que este sea el puerto correcto
   baudRate: 9600,
 });
 
@@ -32,43 +33,51 @@ port.on('open', () => {
   console.log('Puerto abierto');
 });
 
-// Cambiar el manejador de 'data' a una función 'async'
+// El manejador de 'data' ahora maneja los datos reales leídos del lector RFID
 port.on('data', async (data) => {  
-  accumulatedData += data.toString('utf-8');  
+  accumulatedData += data.toString('utf-8');  // Acumula los datos leídos
   console.log('Datos acumulados:', accumulatedData);
 
-  // Verificar si los datos contienen un salto de línea
+  // Verificar si los datos contienen un salto de línea (indicación de fin de lectura)
   if (accumulatedData.includes('\n')) {
-    const uid = accumulatedData.trim();  // Eliminar espacios y saltos de línea
-    
+    // Limpiar espacios y saltos de línea extra
+    let uid = accumulatedData.trim();
+
+    // Solo procesamos si el UID tiene el formato correcto (eliminamos cualquier texto previo no deseado)
+    const uidPattern = /^[A-F0-9\s]+$/;
+
+    // Si el UID no es válido, limpiamos los datos y no procesamos nada
+    if (!uidPattern.test(uid)) {
+      console.log('Esperando datos válidos...');  // Este log puede ser opcional
+      accumulatedData = '';  // Limpiar los datos acumulados y esperar una nueva lectura
+      return;  // No hacer nada más hasta que tengamos un UID válido
+    }
+
     console.log('UID recibido:', uid);
 
-    // Si el UID tiene el formato esperado (puedes modificar el patrón si es necesario)
-    const uidPattern = /^[A-F0-9\s]+$/; // Asegurarse de que el UID sea un formato hexadecimal
-    if (uidPattern.test(uid)) {
-      const extractedUID = uid;
+    // Si es un UID válido, procesarlo
+    const extractedUID = uid;
 
-      try {
-        const response = await axios.post('https://qr-backend-oxm9.onrender.com/api/students/card/uid', {
-          cardUID: extractedUID,
-        });
+    try {
+      // Realizar la llamada al controlador para obtener los datos del estudiante
+      const response = await axios.post('https://qr-backend-oxm9.onrender.com/api/students/card/uid', {
+        cardUID: extractedUID,
+      });
 
-        console.log('Respuesta del controlador:', response.data); 
+      console.log('Respuesta del controlador:', response.data);
 
-        // Emitir el UID o los datos del estudiante según la respuesta
-        io.emit('uidReceived', response.data);  
+      // Emitir el UID o los datos del estudiante al cliente
+      io.emit('uidReceived', response.data);  // Emitir los datos al cliente
 
-      } catch (error) {
-        console.error('Error al enviar el UID al controlador:', error.response ? error.response.data : error.message);
-      }
-
-      accumulatedData = ''; // Limpiar los datos acumulados después de procesarlos
-    } else {
-      console.error('UID no válido recibido:', uid);
-      accumulatedData = ''; // Limpiar los datos acumulados si no es un UID válido
+    } catch (error) {
+      console.error('Error al enviar el UID al controlador:', error.response ? error.response.data : error.message);
     }
+
+    // Limpiar los datos acumulados después de procesarlos
+    accumulatedData = ''; 
   }
 });
+
 
 
 port.on('error', (err) => {
@@ -86,24 +95,32 @@ app.use('/api/careers', careerRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/semesters', semesterRoutes);
 
-// Ruta raíz que devuelve "Inicio"
+// Ruta raíz
 app.get('/', (req, res) => {
   res.status(200).send('<h1>Inicio</h1>');
 });
 
-// Inicia la conexión de socket.io
+// Conexión de Socket.IO
 io.on('connection', (socket) => {
   console.log('Cliente conectado');
 
-  // Escuchar el evento 'startReadingCard'
   socket.on('startReadingCard', () => {
     console.log('Evento startReadingCard recibido');
+    
+    // Aquí es donde ahora debemos esperar el UID real desde el puerto serial
+    if (accumulatedData.trim()) {
+      // Si ya tenemos un UID válido en accumulatedData
+      const uid = accumulatedData.trim();
+      console.log('UID recibido:', uid);
 
-    const mockUID = '1B 8D 3C 02';  // Este es un UID de ejemplo
+      // Emitimos el UID al cliente
+      socket.emit('uidReceived', { cardUID: uid });
 
-    socket.emit('uidReceived', { cardUID: mockUID });
-
-    console.log('UID enviado al cliente:', mockUID);
+      // Limpiar los datos acumulados después de emitirlos
+      accumulatedData = '';
+    } else {
+      console.log('Esperando datos válidos...');
+    }
   });
 
   socket.on('disconnect', () => {
@@ -112,7 +129,7 @@ io.on('connection', (socket) => {
 });
 
 
-// Iniciar el servidor con manejo de errores
+// Iniciar el servidor
 try {
   connectToDatabase().then(() => {
     server.listen(PORT, () => {
